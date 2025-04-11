@@ -1,16 +1,17 @@
-import { io, Socket } from 'socket.io-client';
+import { Manager, Socket } from 'socket.io-client';
 
-let socket: Socket | undefined;
+let socket: typeof Socket | undefined;
 
 export const initializeSocket = () => {
   if (!socket) {
-    socket = io({
+    const manager = new Manager({
       path: '/api/socket',
-      addTrailingSlash: false,
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
     });
+
+    socket = manager.socket('/');
 
     socket.on('connect', () => {
       console.log('Socket connected:', socket?.id);
