@@ -25,7 +25,7 @@ export default function Home() {
       setSocketError(null);
     });
 
-    socket.on('connect_error', (error) => {
+    socket.on('connect_error', (error: Error) => {
       console.error('Connection error:', error);
       setSocketError('Failed to connect to server. Please try again.');
     });
@@ -40,11 +40,24 @@ export default function Home() {
       setStoreLobbyCode(code);
     });
 
+    socket.on('lobbyError', ({ message }: { message: string }) => {
+      console.error('Lobby error:', message);
+      setSocketError(message);
+      setIsJoining(false);
+    });
+
+    socket.on('gameStarted', ({ rounds }: { rounds: number }) => {
+      console.log('Game started with rounds:', rounds);
+      // Update game state here
+    });
+
     return () => {
       socket.off('connect');
       socket.off('connect_error');
       socket.off('playerJoined');
       socket.off('lobbyCreated');
+      socket.off('lobbyError');
+      socket.off('gameStarted');
     };
   }, []);
 
@@ -72,6 +85,11 @@ export default function Home() {
     const socket = getSocket();
     socket.emit('joinLobby', { code: lobbyCode, name });
     setStoreLobbyCode(lobbyCode);
+  };
+
+  const startGame = () => {
+    const socket = getSocket();
+    socket.emit('startGame', { code: lobbyCode, rounds: 3 });
   };
 
   return (
@@ -140,7 +158,14 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Game />
+              {players.some(p => p.isHost) && (
+                <button
+                  onClick={startGame}
+                  className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+                >
+                  Start Game
+                </button>
+              )}
             </div>
           )
         ) : (

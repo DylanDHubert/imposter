@@ -8,7 +8,7 @@ declare global {
 
 const ioHandler = (req: Request) => {
   if (!global.io) {
-    console.log('New Socket.io server...');
+    console.log('Initializing Socket.io server...');
     global.io = new Server({
       cors: {
         origin: '*',
@@ -18,33 +18,38 @@ const ioHandler = (req: Request) => {
     });
 
     global.io.on('connection', (socket) => {
-      console.log('Client connected', socket.id);
+      console.log('Client connected:', socket.id);
 
       socket.on('createLobby', ({ code, name }: { code: string; name: string }) => {
         console.log('Creating lobby:', code, name);
         socket.join(code);
         socket.emit('lobbyCreated', { code });
-        global.io?.to(code).emit('playerJoined', { name, isHost: true });
+        socket.to(code).emit('playerJoined', { name, isHost: true });
       });
 
       socket.on('joinLobby', ({ code, name }: { code: string; name: string }) => {
         console.log('Joining lobby:', code, name);
+        const room = global.io?.sockets.adapter.rooms.get(code);
+        if (!room) {
+          socket.emit('lobbyError', { message: 'Lobby not found' });
+          return;
+        }
         socket.join(code);
-        global.io?.to(code).emit('playerJoined', { name, isHost: false });
+        socket.to(code).emit('playerJoined', { name, isHost: false });
       });
 
       socket.on('startGame', ({ code, rounds }: { code: string; rounds: number }) => {
         console.log('Starting game:', code, rounds);
-        global.io?.to(code).emit('gameStarted', { rounds });
+        socket.to(code).emit('gameStarted', { rounds });
       });
 
       socket.on('nextRound', ({ code }: { code: string }) => {
         console.log('Next round:', code);
-        global.io?.to(code).emit('roundAdvanced');
+        socket.to(code).emit('roundAdvanced');
       });
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected', socket.id);
+        console.log('Client disconnected:', socket.id);
       });
     });
   }

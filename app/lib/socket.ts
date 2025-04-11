@@ -16,7 +16,7 @@ export const initializeSocket = () => {
       console.log('Socket connected:', socket?.id);
     });
 
-    socket.on('connect_error', (error) => {
+    socket.on('connect_error', (error: Error) => {
       console.error('Socket connection error:', error);
     });
 
