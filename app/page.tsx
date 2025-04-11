@@ -14,42 +14,76 @@ export default function Home() {
   const [name, setName] = useState('');
   const [lobbyCode, setLobbyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [socketError, setSocketError] = useState<string | null>(null);
   const { players, addPlayer, setLobbyCode: setStoreLobbyCode, gameStarted } = useGameStore();
 
   useEffect(() => {
     const socket = getSocket();
 
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      setSocketError(null);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      setSocketError('Failed to connect to server. Please try again.');
+    });
+
     socket.on('playerJoined', (player: Player) => {
+      console.log('Player joined:', player);
       addPlayer(player.name, player.isHost);
     });
 
+    socket.on('lobbyCreated', ({ code }: { code: string }) => {
+      console.log('Lobby created:', code);
+      setStoreLobbyCode(code);
+    });
+
     return () => {
-      socket.disconnect();
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('playerJoined');
+      socket.off('lobbyCreated');
     };
   }, []);
 
   const createLobby = () => {
-    if (!name) return;
+    if (!name) {
+      setSocketError('Please enter your name');
+      return;
+    }
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setStoreLobbyCode(code);
     const socket = getSocket();
     socket.emit('createLobby', { code, name });
     addPlayer(name, true);
   };
 
   const joinLobby = () => {
-    if (!name || !lobbyCode) return;
+    if (!name) {
+      setSocketError('Please enter your name');
+      return;
+    }
+    if (!lobbyCode) {
+      setSocketError('Please enter a lobby code');
+      return;
+    }
     setIsJoining(true);
     const socket = getSocket();
     socket.emit('joinLobby', { code: lobbyCode, name });
     setStoreLobbyCode(lobbyCode);
-    addPlayer(name);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold text-center mb-6">Imposter Game</h1>
+        
+        {socketError && (
+          <div className="bg-red-100 p-4 rounded-lg mb-4">
+            <p className="text-red-700">{socketError}</p>
+          </div>
+        )}
         
         {!gameStarted ? (
           players.length === 0 ? (

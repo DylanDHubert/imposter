@@ -14,32 +14,37 @@ const ioHandler = (req: Request) => {
         origin: '*',
         methods: ['GET', 'POST'],
       },
+      path: '/api/socket',
     });
 
     global.io.on('connection', (socket) => {
-      console.log('Client connected');
+      console.log('Client connected', socket.id);
 
       socket.on('createLobby', ({ code, name }: { code: string; name: string }) => {
+        console.log('Creating lobby:', code, name);
         socket.join(code);
         socket.emit('lobbyCreated', { code });
         global.io?.to(code).emit('playerJoined', { name, isHost: true });
       });
 
       socket.on('joinLobby', ({ code, name }: { code: string; name: string }) => {
+        console.log('Joining lobby:', code, name);
         socket.join(code);
         global.io?.to(code).emit('playerJoined', { name, isHost: false });
       });
 
       socket.on('startGame', ({ code, rounds }: { code: string; rounds: number }) => {
+        console.log('Starting game:', code, rounds);
         global.io?.to(code).emit('gameStarted', { rounds });
       });
 
       socket.on('nextRound', ({ code }: { code: string }) => {
+        console.log('Next round:', code);
         global.io?.to(code).emit('roundAdvanced');
       });
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        console.log('Client disconnected', socket.id);
       });
     });
   }
