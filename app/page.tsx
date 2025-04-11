@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useGameStore } from './store';
-import { getSocket } from './lib/socket';
+import { getSocket, disconnectSocket } from './lib/socket';
 import Game from './components/Game';
 
 interface Player {
+  id: string;
   name: string;
   isHost: boolean;
 }
@@ -15,7 +16,7 @@ export default function Home() {
   const [lobbyCode, setLobbyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [socketError, setSocketError] = useState<string | null>(null);
-  const { players, addPlayer, setLobbyCode: setStoreLobbyCode, gameStarted } = useGameStore();
+  const { players, addPlayer, removePlayer, updatePlayerConnection, setLobbyCode: setStoreLobbyCode, gameStarted } = useGameStore();
 
   useEffect(() => {
     const socket = getSocket();
@@ -33,6 +34,11 @@ export default function Home() {
     socket.on('playerJoined', (player: Player) => {
       console.log('Player joined:', player);
       addPlayer(player.name, player.isHost);
+    });
+
+    socket.on('playerLeft', (playerId: string) => {
+      console.log('Player left:', playerId);
+      updatePlayerConnection(playerId, false);
     });
 
     socket.on('lobbyCreated', ({ code }: { code: string }) => {
@@ -55,9 +61,11 @@ export default function Home() {
       socket.off('connect');
       socket.off('connect_error');
       socket.off('playerJoined');
+      socket.off('playerLeft');
       socket.off('lobbyCreated');
       socket.off('lobbyError');
       socket.off('gameStarted');
+      disconnectSocket();
     };
   }, []);
 
@@ -152,9 +160,10 @@ export default function Home() {
                 <h3 className="font-medium">Players:</h3>
                 {players.map((player) => (
                   <div key={player.id} className="flex items-center space-x-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className={`w-2 h-2 rounded-full ${player.isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     <span>{player.name}</span>
                     {player.isHost && <span className="text-sm text-gray-500">(Host)</span>}
+                    {!player.isConnected && <span className="text-sm text-red-500">(Disconnected)</span>}
                   </div>
                 ))}
               </div>

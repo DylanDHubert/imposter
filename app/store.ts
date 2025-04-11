@@ -5,6 +5,7 @@ interface Player {
   id: string;
   name: string;
   isHost: boolean;
+  isConnected: boolean;
 }
 
 interface GameState {
@@ -17,6 +18,7 @@ interface GameState {
   lobbyCode: string;
   addPlayer: (name: string, isHost?: boolean) => void;
   removePlayer: (id: string) => void;
+  updatePlayerConnection: (id: string, isConnected: boolean) => void;
   startGame: (rounds: number) => void;
   nextRound: () => void;
   setQuestion: (question: string) => void;
@@ -35,11 +37,17 @@ export const useGameStore = create<GameState>((set) => ({
   lobbyCode: '',
   addPlayer: (name: string, isHost = false) =>
     set((state) => ({
-      players: [...state.players, { id: uuidv4(), name, isHost }],
+      players: [...state.players, { id: uuidv4(), name, isHost, isConnected: true }],
     })),
   removePlayer: (id: string) =>
     set((state) => ({
       players: state.players.filter((player) => player.id !== id),
+    })),
+  updatePlayerConnection: (id: string, isConnected: boolean) =>
+    set((state) => ({
+      players: state.players.map((player) =>
+        player.id === id ? { ...player, isConnected } : player
+      ),
     })),
   startGame: (rounds: number) =>
     set({ gameStarted: true, totalRounds: rounds, currentRound: 1 }),
