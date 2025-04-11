@@ -5,7 +5,7 @@ let socket: ReturnType<typeof Manager.prototype.socket> | null = null;
 export const initializeSocket = () => {
   if (!socket) {
     const manager = new Manager({
-      path: '/api/socket',
+      path: '/api/socket/io',
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
