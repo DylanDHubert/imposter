@@ -15,6 +15,7 @@ const ioHandler = (req: Request) => {
         methods: ['GET', 'POST'],
       },
       path: '/api/socket',
+      transports: ['websocket'],
     });
 
     global.io.on('connection', (socket) => {
