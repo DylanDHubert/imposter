@@ -1,6 +1,6 @@
-import { Manager, Socket } from 'socket.io-client';
+import { Manager } from 'socket.io-client';
 
-let socket: typeof Socket | undefined;
+let socket: ReturnType<typeof Manager.prototype.socket> | null = null;
 
 export const initializeSocket = () => {
   if (!socket) {
