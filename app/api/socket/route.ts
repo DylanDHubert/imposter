@@ -1,10 +1,14 @@
 import { Server } from 'socket.io';
 import { NextResponse } from 'next/server';
 
+// Extend NodeJS.Global to include io
+declare global {
+  var io: Server | undefined;
+}
+
 const ioHandler = (req: Request) => {
   if (!global.io) {
     console.log('New Socket.io server...');
-    // @ts-ignore
     global.io = new Server({
       cors: {
         origin: '*',
@@ -18,20 +22,20 @@ const ioHandler = (req: Request) => {
       socket.on('createLobby', ({ code, name }: { code: string; name: string }) => {
         socket.join(code);
         socket.emit('lobbyCreated', { code });
-        global.io.to(code).emit('playerJoined', { name, isHost: true });
+        global.io?.to(code).emit('playerJoined', { name, isHost: true });
       });
 
       socket.on('joinLobby', ({ code, name }: { code: string; name: string }) => {
         socket.join(code);
-        global.io.to(code).emit('playerJoined', { name, isHost: false });
+        global.io?.to(code).emit('playerJoined', { name, isHost: false });
       });
 
       socket.on('startGame', ({ code, rounds }: { code: string; rounds: number }) => {
-        global.io.to(code).emit('gameStarted', { rounds });
+        global.io?.to(code).emit('gameStarted', { rounds });
       });
 
       socket.on('nextRound', ({ code }: { code: string }) => {
-        global.io.to(code).emit('roundAdvanced');
+        global.io?.to(code).emit('roundAdvanced');
       });
 
       socket.on('disconnect', () => {
